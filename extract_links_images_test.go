@@ -48,7 +48,7 @@ func TestGetURLsFromHTMLAbsolute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actual, err := getURLsFromHTML(tc.htmlBody, tc.baseURL)
 			if err != nil {
-				t.Errorf("Test %v - '%s' FAIL: unexpected error: %v", tc.name, err)
+				t.Errorf("couldn't get URLs from HTML: %v", err)
 				return
 			}
 
@@ -56,6 +56,60 @@ func TestGetURLsFromHTMLAbsolute(t *testing.T) {
 				t.Errorf("expected %v, got %v", tc.expected, actual)
 			}
 
+		})
+	}
+}
+
+func TestGetImagesFromHTMLRelative(t *testing.T) {
+	inputURL := "https://blog.boot.dev"
+
+	baseURL, err := url.Parse(inputURL)
+	if err != nil {
+		t.Errorf("couldn't parse input URL: %v", err)
+		return
+	}
+
+	tests := []struct {
+		name     string
+		htmlBody string
+		baseURL  *url.URL
+		expected []string
+	}{
+		{
+			name:     "Test If result has all absolute URLs",
+			htmlBody: `<html><body><img src="/logo.png" alt="Logo"></body></html>`,
+			baseURL:  baseURL,
+			expected: []string{"https://blog.boot.dev/logo.png"},
+		},
+		{
+			name:     "Test If result empty if no image Tag",
+			htmlBody: `<html><body>`,
+			baseURL:  baseURL,
+			expected: []string{},
+		},
+		{
+			name: "test if multiple images are collected",
+			htmlBody: `<html><body>
+						<img src="/logo.png" alt="Logo">
+						<img src="https://cdn.boot.dev/banner.jpg">
+						</body></html>`,
+			baseURL: baseURL,
+			expected: []string{
+				"https://blog.boot.dev/logo.png",
+				"https://cdn.boot.dev/banner.jpg",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := getImagesFromHTML(tc.htmlBody, tc.baseURL)
+			if err != nil {
+				t.Errorf("couldn't get URLs from HTML: %v", err)
+			}
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Errorf("expected %v, got %v", tc.expected, actual)
+			}
 		})
 	}
 }

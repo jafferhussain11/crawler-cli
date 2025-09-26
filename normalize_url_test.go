@@ -19,7 +19,7 @@ func TestNormalizeURL(t *testing.T) {
 			expected: "blog.boot.dev/path",
 		},
 		{
-			name:     "remove path",
+			name:     "remove / in path",
 			inputURL: "https://blog.boot.dev/path/",
 			expected: "blog.boot.dev/path",
 		},

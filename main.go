@@ -55,10 +55,12 @@ func main() {
 
 	cfg.crawlPage(baseURL)
 	cfg.wg.Wait()
-	fmt.Println("Crawling done, Result below :")
-	for k, page := range cfg.pages {
-		//print key and value
-		fmt.Printf("%s: %s\n", k, page)
+	fmt.Println("Crawling done, See results in csv...")
+
+	err = writeCSVReport(cfg.pages, "report.csv")
+	if err != nil {
+		fmt.Printf("error writing csv report: %s\n", err)
+		os.Exit(1)
 	}
 
 }

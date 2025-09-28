@@ -12,6 +12,7 @@ import (
 
 type config struct {
 	pages              map[string]PageData
+	maxPages           int
 	baseURL            *url.URL
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
@@ -19,6 +20,10 @@ type config struct {
 }
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
+
+	if cfg.getLenOfPagesMap(cfg.pages) >= cfg.maxPages {
+		return
+	}
 
 	baseURL := cfg.baseURL
 
@@ -72,6 +77,13 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 			<-cfg.concurrencyControl
 		}()
 	}
+
+}
+
+func (cfg *config) getLenOfPagesMap(pages map[string]PageData) int {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+	return len(pages)
 
 }
 

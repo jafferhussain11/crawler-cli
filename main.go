@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 func main() {
@@ -45,7 +46,8 @@ func main() {
 	}
 
 	cfg := config{
-		pages:              make(map[string]PageData),
+		pages:              sync.Map{},
+		pageCount:          atomic.Int32{},
 		mu:                 &sync.Mutex{},
 		wg:                 &sync.WaitGroup{},
 		concurrencyControl: make(chan struct{}, maxConcurrency), //limit to 7
@@ -57,7 +59,7 @@ func main() {
 	cfg.wg.Wait()
 	fmt.Println("Crawling done, See results in csv...")
 
-	err = writeCSVReport(cfg.pages, "report.csv")
+	err = writeCSVReport(&cfg.pages, "report.csv")
 	if err != nil {
 		fmt.Printf("error writing csv report: %s\n", err)
 		os.Exit(1)

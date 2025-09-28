@@ -21,6 +21,7 @@ func getURLsFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
 			parsedURL, err := url.Parse(val)
 			if err != nil {
 				fmt.Printf("Couldn't parse URL: %v", err)
+				return
 			}
 
 			absoluteURL := baseURL.ResolveReference(parsedURL)
@@ -47,6 +48,7 @@ func getImagesFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
 			parsedURL, err := url.Parse(val)
 			if err != nil {
 				fmt.Printf("Couldn't parse URL: %v", err)
+				return
 			}
 
 			absoluteURL := baseURL.ResolveReference(parsedURL)

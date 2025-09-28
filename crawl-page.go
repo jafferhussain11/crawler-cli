@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
 )
 
 //TODO : rawBaseURL = {string} "https://wikipedia.org"
@@ -11,8 +12,9 @@ import (
 //pages = {map[string]int}
 
 type config struct {
-	pages              map[string]PageData
+	pages              sync.Map
 	maxPages           int
+	pageCount          atomic.Int32
 	baseURL            *url.URL
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
@@ -21,7 +23,7 @@ type config struct {
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
 
-	if cfg.getLenOfPagesMap(cfg.pages) >= cfg.maxPages {
+	if cfg.pageCount.Load() >= int32(cfg.maxPages) {
 		return
 	}
 
@@ -63,9 +65,11 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 
 	pageData := extractPageData(html, rawCurrentURL)
 
-	cfg.mu.Lock()
-	cfg.pages[normalizedCurrentURL] = pageData
-	cfg.mu.Unlock()
+	if _, loaded := cfg.pages.LoadOrStore(normalizedCurrentURL, pageData); loaded {
+		return
+	}
+
+	cfg.pageCount.Add(1)
 
 	//we can spawn new go routines
 	for _, url := range pageData.OutgoingLinks {
@@ -78,21 +82,4 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		}()
 	}
 
-}
-
-func (cfg *config) getLenOfPagesMap(pages map[string]PageData) int {
-	cfg.mu.Lock()
-	defer cfg.mu.Unlock()
-	return len(pages)
-
-}
-
-func (cfg *config) updatePageVisit(normalizedCurrentURL string) bool {
-	cfg.mu.Lock()
-	defer cfg.mu.Unlock()
-
-	if _, ok := cfg.pages[normalizedCurrentURL]; ok {
-		return true
-	}
-	return false
 }

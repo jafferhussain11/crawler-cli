@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
+	"sync"
 )
 
 func main() {
@@ -15,29 +18,47 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(args) > 1 {
+	if len(args) > 3 {
 		fmt.Println("too many arguments provided")
 		os.Exit(1)
 	}
 
 	baseURL := args[0]
+	maxPages, err := strconv.Atoi(args[1])
+	if err != nil {
+		fmt.Println("invalid max pages")
+		os.Exit(1)
+	}
+
+	maxConcurrency, err := strconv.Atoi(args[2])
+	if err != nil {
+		fmt.Println("invalid max concurrency")
+		os.Exit(1)
+	}
 
 	fmt.Printf("starting crawl of: %s\n", baseURL)
 
-	//call getHTML
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		fmt.Printf("error parsing base URL: %s\n", err)
+		os.Exit(1)
+	}
 
-	//htmlString, err := getHTML(baseURL)
-	//if err != nil {
-	//	fmt.Printf("error getting HTML: %s\n", err)
-	//	os.Exit(1)
-	//}
-	//fmt.Println(htmlString)
+	cfg := config{
+		pages:              make(map[string]PageData),
+		mu:                 &sync.Mutex{},
+		wg:                 &sync.WaitGroup{},
+		concurrencyControl: make(chan struct{}, maxConcurrency), //limit to 7
+		baseURL:            parsedURL,
+		maxPages:           maxPages,
+	}
 
-	//crawl
-	crawlRes := make(map[string]int)
-
-	crawlPage(baseURL, baseURL, crawlRes)
-
-	fmt.Println(crawlRes)
+	cfg.crawlPage(baseURL)
+	cfg.wg.Wait()
+	fmt.Println("Crawling done, Result below :")
+	for k, page := range cfg.pages {
+		//print key and value
+		fmt.Printf("%s: %s\n", k, page)
+	}
 
 }
